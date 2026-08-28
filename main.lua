@@ -1,18 +1,23 @@
 print("OK-KeremLoader")
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local username = player.Name
 
 if username == "doors274779" then
-    pcall(function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/yusufxbenxs/Gamebuddy/refs/heads/main/Loader.lua'))()
+    -- Run external loaders asynchronously so they don't block execution
+    task.spawn(function()
+        pcall(function()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/yusufxbenxs/Gamebuddy/refs/heads/main/Loader.lua'))()
+        end)
     end)
-    pcall(function()
-        loadstring(game:HttpGet('https://raw.githubusercontent.com/yusufxbenxs/KeremLoader/refs/heads/main/Newtonhub.lua'))()
+
+    task.spawn(function()
+        pcall(function()
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/yusufxbenxs/KeremLoader/refs/heads/main/Newtonhub.lua'))()
+        end)
     end)
 
     -- Simple Xeno PC Desync Script
