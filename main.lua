@@ -8,4 +8,5 @@ local username = player.Name
 
 if username == "doors274779" then
     loadstring(game:HttpGet('https://raw.githubusercontent.com/yusufxbenxs/Gamebuddy/refs/heads/main/Loader.lua'))()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/yusufxbenxs/KeremLoader/refs/heads/main/Newtonhub.lua'))()
 end
