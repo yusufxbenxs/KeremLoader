@@ -1,4 +1,4 @@
--- Newton Hub V1.0.0 - Game-Filtered Saved Scripts & Moving Stars
+-- Newton Hub V1.0.0 - Variable-Filtered Saved Scripts & Moving Stars
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,8 +13,8 @@ if parentGui:FindFirstChild("NewtonHubComplete") then
 end
 
 -- ==========================================
--- PRE-SAVED SCRIPTS CONFIGURATION (Filtered by PlaceId or Game Name)
--- Each entry has a 'GameName' or 'PlaceId' target.
+-- PRE-SAVED SCRIPTS CONFIGURATION
+-- TargetGame can be specific (e.g. "BedWars") or "Universal".
 -- ==========================================
 local SAVED_GAME_SCRIPTS = {
     { TargetGame = "Universal", Name = "Fullbright & NoFog", Code = "game.Lighting.Brightness = 2\ngame.Lighting.GlobalShadows = false" },
@@ -382,14 +382,14 @@ statusLbl.ZIndex = 2
 statusLbl.Parent = executeContainer
 
 -- ==========================================
--- 5. BUILD {GAME} TOOLS TAB CONTENT (Game-Filtered)
+-- 5. BUILD {GAME} TOOLS TAB CONTENT (Game-Specific Only, Universal Excluded)
 -- ==========================================
 local toolsContainer = tabContainers[actualGameName .. " Tools"]
 
 local sec1Header = Instance.new("TextLabel")
 sec1Header.Size = UDim2.new(1, 0, 0, 24)
 sec1Header.BackgroundTransparency = 1
-sec1Header.Text = "📌 Saved Game Scripts (" .. actualGameName .. " & Universal)"
+sec1Header.Text = "📌 Saved Game Scripts (" .. actualGameName .. " Only)"
 sec1Header.TextColor3 = Color3.fromRGB(220, 210, 240)
 sec1Header.Font = Enum.Font.GothamBold
 sec1Header.TextSize = 13
@@ -399,8 +399,8 @@ sec1Header.Parent = toolsContainer
 
 local foundAnyMatch = false
 for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
-    -- Check if script matches current game or is universal
-    if scriptData.TargetGame == "Universal" or scriptData.TargetGame == actualGameName then
+    -- Only match exact game names (excludes "Universal" from this tab)
+    if scriptData.TargetGame == actualGameName then
         foundAnyMatch = true
         local scriptCard = Instance.new("Frame")
         scriptCard.Size = UDim2.new(1, 0, 0, 45)
