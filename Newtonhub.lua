@@ -1,4 +1,4 @@
--- Newton Hub V1.0.0 - Dynamic Starry Background & {GAME} Tools Tab
+-- Newton Hub V1.0.0 - Game-Filtered Saved Scripts & Moving Stars
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,14 +13,14 @@ if parentGui:FindFirstChild("NewtonHubComplete") then
 end
 
 -- ==========================================
--- PRE-SAVED SCRIPTS CONFIGURATION (Section 1)
--- Each entry in this table represents a different built-in script.
+-- PRE-SAVED SCRIPTS CONFIGURATION (Filtered by PlaceId or Game Name)
+-- Each entry has a 'GameName' or 'PlaceId' target.
 -- ==========================================
 local SAVED_GAME_SCRIPTS = {
-    { Name = "Fullbright & NoFog", Code = "game.Lighting.Brightness = 2\ngame.Lighting.GlobalShadows = false\nfor _, v in pairs(game.Lighting:GetChildren()) do if v:IsA('PostEffect') then v.Enabled = false end end" },
-    { Name = "Infinite Jump", Code = "local u = game:GetService('UserInputService')\nu.JumpRequest:Connect(function() game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)" },
-    { Name = "WalkSpeed Modifier (50)", Code = "game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 50" },
-    { Name = "ESP Highlight Players", Code = "for _, p in pairs(game.Players:GetPlayers()) do if p ~= game.Players.LocalPlayer and p.Character then local h = Instance.new('Highlight', p.Character) h.FillColor = Color3.fromRGB(150, 50, 255) end end" }
+    { TargetGame = "Universal", Name = "Fullbright & NoFog", Code = "game.Lighting.Brightness = 2\ngame.Lighting.GlobalShadows = false" },
+    { TargetGame = "Universal", Name = "Infinite Jump", Code = "game:GetService('UserInputService').JumpRequest:Connect(function() game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)" },
+    { TargetGame = "BedWars", Name = "BedWars Custom ESP", Code = "print('Running BedWars script...')" },
+    { TargetGame = "Blox Fruits", Name = "Blox Fruits Auto Farm Test", Code = "print('Running Blox Fruits script...')" }
 }
 
 local screenGui = Instance.new("ScreenGui")
@@ -60,7 +60,7 @@ mainWindow.ClipsDescendants = true
 mainWindow.Parent = screenGui
 Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 12)
 
--- Procedural Moving Starry Background Generator
+-- Procedural Moving Starry Background Generator (Deletes and recycles at bottom)
 local starHolder = Instance.new("Folder")
 starHolder.Name = "StarryBackground"
 starHolder.Parent = mainWindow
@@ -81,11 +81,10 @@ for i = 1, 50 do
     
     table.insert(activeStars, {
         Object = star,
-        Speed = math.random(8, 20) / 1000 -- Slow upward drifting speed
+        Speed = math.random(8, 20) / 1000
     })
 end
 
--- Star Animation Loop (Moves up, deletes at top, respawns at bottom with new X)
 RunService.RenderStepped:Connect(function(dt)
     for _, starData in ipairs(activeStars) do
         local star = starData.Object
@@ -94,7 +93,6 @@ RunService.RenderStepped:Connect(function(dt)
             local newY = currentPos.Y.Scale - (starData.Speed * dt)
             
             if newY < -0.05 then
-                -- Reached top: destroy old star frame safely and reset at bottom
                 star:Destroy()
                 
                 local newStar = Instance.new("Frame")
@@ -280,7 +278,6 @@ for i, tabName in ipairs(tabList) do
     tabContainers[rawKeyName] = container
 end
 
--- Tab Switching Logic
 for name, btn in pairs(tabButtons) do
     btn.MouseButton1Click:Connect(function()
         for otherName, otherBtn in pairs(tabButtons) do
@@ -385,15 +382,14 @@ statusLbl.ZIndex = 2
 statusLbl.Parent = executeContainer
 
 -- ==========================================
--- 5. BUILD {GAME} TOOLS TAB CONTENT (Section 1 & Section 2)
+-- 5. BUILD {GAME} TOOLS TAB CONTENT (Game-Filtered)
 -- ==========================================
 local toolsContainer = tabContainers[actualGameName .. " Tools"]
 
--- Section Header 1: Saved Scripts
 local sec1Header = Instance.new("TextLabel")
 sec1Header.Size = UDim2.new(1, 0, 0, 24)
 sec1Header.BackgroundTransparency = 1
-sec1Header.Text = "📌 Saved Game Scripts (Built-in)"
+sec1Header.Text = "📌 Saved Game Scripts (" .. actualGameName .. " & Universal)"
 sec1Header.TextColor3 = Color3.fromRGB(220, 210, 240)
 sec1Header.Font = Enum.Font.GothamBold
 sec1Header.TextSize = 13
@@ -401,57 +397,74 @@ sec1Header.TextXAlignment = Enum.TextXAlignment.Left
 sec1Header.ZIndex = 2
 sec1Header.Parent = toolsContainer
 
+local foundAnyMatch = false
 for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
-    local scriptCard = Instance.new("Frame")
-    scriptCard.Size = UDim2.new(1, 0, 0, 45)
-    scriptCard.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
-    scriptCard.ZIndex = 2
-    scriptCard.Parent = toolsContainer
-    Instance.new("UICorner", scriptCard).CornerRadius = UDim.new(0, 8)
-    
-    local nameLbl = Instance.new("TextLabel")
-    nameLbl.Size = UDim2.new(1, -110, 1, 0)
-    nameLbl.Position = UDim2.new(0, 12, 0, 0)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.Text = scriptData.Name
-    nameLbl.TextColor3 = Color3.fromRGB(190, 180, 210)
-    nameLbl.Font = Enum.Font.GothamMedium
-    nameLbl.TextSize = 12
-    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.ZIndex = 2
-    nameLbl.Parent = scriptCard
-    
-    local execCardBtn = Instance.new("TextButton")
-    execCardBtn.Size = UDim2.new(0, 90, 0, 30)
-    execCardBtn.Position = UDim2.new(1, -98, 0.5, -15)
-    execCardBtn.BackgroundColor3 = Color3.fromRGB(45, 35, 75)
-    execCardBtn.Text = "Execute"
-    execCardBtn.TextColor3 = Color3.fromRGB(220, 220, 240)
-    execCardBtn.Font = Enum.Font.GothamBold
-    execCardBtn.TextSize = 12
-    execCardBtn.ZIndex = 2
-    execCardBtn.Parent = scriptCard
-    Instance.new("UICorner", execCardBtn).CornerRadius = UDim.new(0, 6)
-    
-    execCardBtn.MouseButton1Click:Connect(function()
-        local success, err = pcall(function()
-            local func = loadstring(scriptData.Code)
-            if func then task.spawn(func) end
+    -- Check if script matches current game or is universal
+    if scriptData.TargetGame == "Universal" or scriptData.TargetGame == actualGameName then
+        foundAnyMatch = true
+        local scriptCard = Instance.new("Frame")
+        scriptCard.Size = UDim2.new(1, 0, 0, 45)
+        scriptCard.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
+        scriptCard.ZIndex = 2
+        scriptCard.Parent = toolsContainer
+        Instance.new("UICorner", scriptCard).CornerRadius = UDim.new(0, 8)
+        
+        local nameLbl = Instance.new("TextLabel")
+        nameLbl.Size = UDim2.new(1, -110, 1, 0)
+        nameLbl.Position = UDim2.new(0, 12, 0, 0)
+        nameLbl.BackgroundTransparency = 1
+        nameLbl.Text = scriptData.Name
+        nameLbl.TextColor3 = Color3.fromRGB(190, 180, 210)
+        nameLbl.Font = Enum.Font.GothamMedium
+        nameLbl.TextSize = 12
+        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+        nameLbl.ZIndex = 2
+        nameLbl.Parent = scriptCard
+        
+        local execCardBtn = Instance.new("TextButton")
+        execCardBtn.Size = UDim2.new(0, 90, 0, 30)
+        execCardBtn.Position = UDim2.new(1, -98, 0.5, -15)
+        execCardBtn.BackgroundColor3 = Color3.fromRGB(45, 35, 75)
+        execCardBtn.Text = "Execute"
+        execCardBtn.TextColor3 = Color3.fromRGB(220, 220, 240)
+        execCardBtn.Font = Enum.Font.GothamBold
+        execCardBtn.TextSize = 12
+        execCardBtn.ZIndex = 2
+        execCardBtn.Parent = scriptCard
+        Instance.new("UICorner", execCardBtn).CornerRadius = UDim.new(0, 6)
+        
+        execCardBtn.MouseButton1Click:Connect(function()
+            local success, err = pcall(function()
+                local func = loadstring(scriptData.Code)
+                if func then task.spawn(func) end
+            end)
+            if success then
+                statusLbl.Text = "Status: Ran saved script [" .. scriptData.Name .. "]"
+                statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
+            else
+                statusLbl.Text = "Status: Error running saved script."
+                statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
+            end
         end)
-        if success then
-            statusLbl.Text = "Status: Ran saved script [" .. scriptData.Name .. "]"
-            statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
-        else
-            statusLbl.Text = "Status: Error running saved script."
-            statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
-        end
-    end)
+    end
+end
+
+if not foundAnyMatch then
+    local noMatchLbl = Instance.new("TextLabel")
+    noMatchLbl.Size = UDim2.new(1, 0, 0, 30)
+    noMatchLbl.BackgroundTransparency = 1
+    noMatchLbl.Text = "No specific saved scripts found for this game."
+    noMatchLbl.TextColor3 = Color3.fromRGB(140, 130, 160)
+    noMatchLbl.Font = Enum.Font.GothamItalic
+    noMatchLbl.TextSize = 12
+    noMatchLbl.TextXAlignment = Enum.TextXAlignment.Left
+    noMatchLbl.ZIndex = 2
+    noMatchLbl.Parent = toolsContainer
 end
 
 -- Section Header 2: Online Scripts
 local sec2Header = Instance.new("TextLabel")
 sec2Header.Size = UDim2.new(1, 0, 0, 30)
-sec2Header.Position = UDim2.new(0, 0, 0, 0)
 sec2Header.BackgroundTransparency = 1
 sec2Header.Text = "🌐 Online Community Scripts"
 sec2Header.TextColor3 = Color3.fromRGB(220, 210, 240)
@@ -461,7 +474,6 @@ sec2Header.TextXAlignment = Enum.TextXAlignment.Left
 sec2Header.ZIndex = 2
 sec2Header.Parent = toolsContainer
 
--- Container for dynamically fetched online scripts
 local onlineScriptsList = Instance.new("Frame")
 onlineScriptsList.Size = UDim2.new(1, 0, 0, 120)
 onlineScriptsList.BackgroundTransparency = 1
@@ -473,7 +485,6 @@ onlineLayout.SortOrder = Enum.SortOrder.LayoutOrder
 onlineLayout.Padding = UDim.new(0, 6)
 onlineLayout.Parent = onlineScriptsList
 
--- Fetch online scripts repository safely
 task.spawn(function()
     local success, response = pcall(function()
         return game:HttpGet("https://raw.githubusercontent.com/visiven/NewtonHub-OnlineScripts/main/scripts.json")
@@ -526,7 +537,6 @@ task.spawn(function()
             end
         end
     else
-        -- Fallback default card if repository cannot be reached
         local fallbackCard = Instance.new("Frame")
         fallbackCard.Size = UDim2.new(1, 0, 0, 38)
         fallbackCard.BackgroundColor3 = Color3.fromRGB(24, 19, 40)
