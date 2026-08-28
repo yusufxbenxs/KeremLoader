@@ -1,4 +1,4 @@
--- Newton Hub V1.0.0 - Cross-Platform (PC & Mobile) Unified Version
+-- Newton Hub V1.0.0 - Fixed Cross-Platform UI Loader
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -6,11 +6,16 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
 
 local localPlayer = Players.LocalPlayer
-local successHui, parentGui = pcall(function()
-    return (gethui and gethui()) or localPlayer:WaitForChild("PlayerGui")
-end)
-if not successHui or not parentGui then
-    parentGui = localPlayer:WaitForChild("PlayerGui")
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+
+-- Safe container parenting for both PC & Mobile
+local parentGui
+if syn and syn.protect_gui then
+    parentGui = CoreGui
+elseif gethui then
+    parentGui = gethui()
+else
+    parentGui = playerGui
 end
 
 if parentGui:FindFirstChild("NewtonHubComplete") then
@@ -30,11 +35,21 @@ local SAVED_GAME_SCRIPTS = {
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NewtonHubComplete"
 screenGui.ResetOnSpawn = false
-screenGui.DisplayOrder = 999999
-screenGui.Parent = parentGui
+screenGui.IgnoreGuiInset = true
+if syn and syn.protect_gui then
+    syn.protect_gui(screenGui)
+    screenGui.Parent = parentGui
+else
+    pcall(function()
+        screenGui.Parent = parentGui
+    end)
+    if not screenGui.Parent then
+        screenGui.Parent = playerGui
+    end
+end
 
 -- ==========================================
--- 1. MINIMIZED "N" ICON (Draggable / Touch Friendly)
+-- 1. MINIMIZED "N" ICON
 -- ==========================================
 local minIcon = Instance.new("TextButton")
 minIcon.Size = UDim2.new(0, 50, 0, 50)
@@ -64,15 +79,12 @@ mainWindow.ClipsDescendants = true
 mainWindow.Parent = screenGui
 Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 12)
 
--- Procedural Moving Starry Background Generator
 local starHolder = Instance.new("Folder")
 starHolder.Name = "StarryBackground"
 starHolder.Parent = mainWindow
 
-math.randomseed(os.time())
 local activeStars = {}
-
-for i = 1, 40 do
+for i = 1, 30 do
     local star = Instance.new("Frame")
     local starSize = math.random(1, 3)
     star.Size = UDim2.new(0, starSize, 0, starSize)
@@ -98,7 +110,6 @@ RunService.RenderStepped:Connect(function(dt)
             
             if newY < -0.05 then
                 star:Destroy()
-                
                 local newStar = Instance.new("Frame")
                 local starSize = math.random(1, 3)
                 newStar.Size = UDim2.new(0, starSize, 0, starSize)
@@ -108,7 +119,6 @@ RunService.RenderStepped:Connect(function(dt)
                 newStar.BorderSizePixel = 0
                 newStar.Parent = starHolder
                 Instance.new("UICorner", newStar).CornerRadius = UDim.new(1, 0)
-                
                 starData.Object = newStar
             else
                 star.Position = UDim2.new(currentPos.X.Scale, currentPos.X.Offset, newY, currentPos.Y.Offset)
@@ -147,7 +157,6 @@ titleText.TextSize = 14
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
 
--- Game Name Pill in Titlebar with Live Game Icon
 local gameBadge = Instance.new("Frame")
 gameBadge.Size = UDim2.new(0, 210, 0, 26)
 gameBadge.Position = UDim2.new(0.5, -105, 0.5, -13)
@@ -173,7 +182,7 @@ task.spawn(function()
 end)
 
 local successInfo, gameInfo = pcall(function() return MarketplaceService:GetProductInfo(game.PlaceId) end)
-local actualGameName = (successInfo and gameInfo and gameInfo.Name) or "{GAME_NAME}"
+local actualGameName = (successInfo and gameInfo and gameInfo.Name) or "Game"
 
 local gameNameLbl = Instance.new("TextLabel")
 gameNameLbl.Size = UDim2.new(1, -30, 1, 0)
@@ -187,7 +196,7 @@ gameNameLbl.TextSize = 11
 gameNameLbl.TextXAlignment = Enum.TextXAlignment.Left
 gameNameLbl.Parent = gameBadge
 
--- Window Controls (Mac style, touch responsive)
+-- Window Controls
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 14, 0, 14)
 closeBtn.Position = UDim2.new(1, -22, 0.5, -7)
@@ -248,7 +257,7 @@ for i, tabName in ipairs(tabList) do
     tabBtn.Text = (i == 2) and "{GAME} Tools" or tabName
     tabBtn.TextColor3 = (i == 1) and Color3.fromRGB(240, 240, 250) or Color3.fromRGB(140, 130, 160)
     tabBtn.Font = (i == 1) and Enum.Font.GothamBold or Enum.Font.GothamMedium
-    tabBtn.TextSize = 12
+    tabBtn.TextSize = 11
     tabBtn.ZIndex = 5
     tabBtn.Parent = sidebar
     Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 8)
@@ -275,7 +284,7 @@ end
 
 for name, btn in pairs(tabButtons) do
     btn.Activated:Connect(function()
-        for otherName, otherBtn in pairs(tabButtons) do
+        for _, otherBtn in pairs(tabButtons) do
             otherBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
             otherBtn.TextColor3 = Color3.fromRGB(140, 130, 160)
             otherBtn.Font = Enum.Font.GothamMedium
@@ -300,7 +309,7 @@ editorBox.Size = UDim2.new(1, 0, 0, 230)
 editorBox.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
 editorBox.MultiLine = true
 editorBox.ClearTextOnFocus = false
-local placeholderTextStr = "Put your script here, then press Run.\n\nIf you want SS: Press Toggle Mode first, then press Run.\n\nIf you want to reset modes between local or SS: Press Toggle mode again to switch to local."
+local placeholderTextStr = "Put your script here, then press Run."
 editorBox.Text = placeholderTextStr
 editorBox.TextColor3 = Color3.fromRGB(100, 90, 120)
 editorBox.Font = Enum.Font.Code
@@ -354,18 +363,6 @@ consoleBtn.ZIndex = 2
 consoleBtn.Parent = execButtonRow
 Instance.new("UICorner", consoleBtn).CornerRadius = UDim.new(0, 8)
 
-local toggleModeBtn = Instance.new("TextButton")
-toggleModeBtn.Size = UDim2.new(0, 185, 1, 0)
-toggleModeBtn.Position = UDim2.new(0, 320, 0, 0)
-toggleModeBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
-toggleModeBtn.Text = "Toggle Mode: Local/Backdoor"
-toggleModeBtn.TextColor3 = Color3.fromRGB(170, 160, 190)
-toggleModeBtn.Font = Enum.Font.GothamBold
-toggleModeBtn.TextSize = 11
-toggleModeBtn.ZIndex = 2
-toggleModeBtn.Parent = execButtonRow
-Instance.new("UICorner", toggleModeBtn).CornerRadius = UDim.new(0, 8)
-
 local statusLbl = Instance.new("TextLabel")
 statusLbl.Size = UDim2.new(1, 0, 0, 20)
 statusLbl.BackgroundTransparency = 1
@@ -377,7 +374,7 @@ statusLbl.ZIndex = 2
 statusLbl.Parent = executeContainer
 
 -- ==========================================
--- 5. BUILD {GAME} TOOLS TAB CONTENT (Game-Specific Only, Universal Excluded)
+-- 5. BUILD {GAME} TOOLS TAB CONTENT
 -- ==========================================
 local toolsContainer = tabContainers[actualGameName .. " Tools"]
 
@@ -428,15 +425,15 @@ for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
         Instance.new("UICorner", execCardBtn).CornerRadius = UDim.new(0, 6)
         
         execCardBtn.Activated:Connect(function()
-            local success, err = pcall(function()
+            local success = pcall(function()
                 local func = loadstring(scriptData.Code)
                 if func then task.spawn(func) end
             end)
             if success then
-                statusLbl.Text = "Status: Ran saved script [" .. scriptData.Name .. "]"
+                statusLbl.Text = "Status: Ran [" .. scriptData.Name .. "]"
                 statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
             else
-                statusLbl.Text = "Status: Error running saved script."
+                statusLbl.Text = "Status: Error running script."
                 statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
             end
         end)
@@ -447,7 +444,7 @@ if not foundAnyMatch then
     local noMatchLbl = Instance.new("TextLabel")
     noMatchLbl.Size = UDim2.new(1, 0, 0, 30)
     noMatchLbl.BackgroundTransparency = 1
-    noMatchLbl.Text = "No specific saved scripts found for this game."
+    noMatchLbl.Text = "No specific saved scripts for this game."
     noMatchLbl.TextColor3 = Color3.fromRGB(140, 130, 160)
     noMatchLbl.Font = Enum.Font.GothamItalic
     noMatchLbl.TextSize = 12
@@ -456,114 +453,18 @@ if not foundAnyMatch then
     noMatchLbl.Parent = toolsContainer
 end
 
--- Section Header 2: Online Scripts
-local sec2Header = Instance.new("TextLabel")
-sec2Header.Size = UDim2.new(1, 0, 0, 30)
-sec2Header.BackgroundTransparency = 1
-sec2Header.Text = "🌐 Online Community Scripts"
-sec2Header.TextColor3 = Color3.fromRGB(220, 210, 240)
-sec2Header.Font = Enum.Font.GothamBold
-sec2Header.TextSize = 13
-sec2Header.TextXAlignment = Enum.TextXAlignment.Left
-sec2Header.ZIndex = 2
-sec2Header.Parent = toolsContainer
-
-local onlineScriptsList = Instance.new("Frame")
-onlineScriptsList.Size = UDim2.new(1, 0, 0, 120)
-onlineScriptsList.BackgroundTransparency = 1
-onlineScriptsList.ZIndex = 2
-onlineScriptsList.Parent = toolsContainer
-
-local onlineLayout = Instance.new("UIListLayout")
-onlineLayout.SortOrder = Enum.SortOrder.LayoutOrder
-onlineLayout.Padding = UDim.new(0, 6)
-onlineLayout.Parent = onlineScriptsList
-
-task.spawn(function()
-    local success, response = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/visiven/NewtonHub-OnlineScripts/main/scripts.json")
-    end)
-    
-    if success and response then
-        local okDecode, scriptArray = pcall(function() return HttpService:JSONDecode(response) end)
-        if okDecode and type(scriptArray) == "table" then
-            for _, onlineData in ipairs(scriptArray) do
-                local card = Instance.new("Frame")
-                card.Size = UDim2.new(1, 0, 0, 38)
-                card.BackgroundColor3 = Color3.fromRGB(24, 19, 40)
-                card.ZIndex = 2
-                card.Parent = onlineScriptsList
-                Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
-                
-                local lbl = Instance.new("TextLabel")
-                lbl.Size = UDim2.new(1, -95, 1, 0)
-                lbl.Position = UDim2.new(0, 10, 0, 0)
-                lbl.BackgroundTransparency = 1
-                lbl.Text = onlineData.Name or "Online Script"
-                lbl.TextColor3 = Color3.fromRGB(170, 165, 195)
-                lbl.Font = Enum.Font.GothamMedium
-                lbl.TextSize = 11
-                lbl.TextXAlignment = Enum.TextXAlignment.Left
-                lbl.ZIndex = 2
-                lbl.Parent = card
-                
-                local loadBtn = Instance.new("TextButton")
-                loadBtn.Size = UDim2.new(0, 80, 0, 26)
-                loadBtn.Position = UDim2.new(1, -88, 0.5, -13)
-                loadBtn.BackgroundColor3 = Color3.fromRGB(38, 28, 62)
-                loadBtn.Text = "Load"
-                loadBtn.TextColor3 = Color3.fromRGB(200, 195, 220)
-                loadBtn.Font = Enum.Font.GothamBold
-                loadBtn.TextSize = 11
-                loadBtn.ZIndex = 2
-                loadBtn.Parent = card
-                Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 4)
-                
-                loadBtn.Activated:Connect(function()
-                    if onlineData.Url then
-                        local fetchedCode = game:HttpGet(onlineData.Url)
-                        local fn = loadstring(fetchedCode)
-                        if fn then task.spawn(fn) end
-                        statusLbl.Text = "Status: Executed online script [" .. onlineData.Name .. "]"
-                        statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
-                    end
-                end)
-            end
-        end
-    else
-        local fallbackCard = Instance.new("Frame")
-        fallbackCard.Size = UDim2.new(1, 0, 0, 38)
-        fallbackCard.BackgroundColor3 = Color3.fromRGB(24, 19, 40)
-        fallbackCard.ZIndex = 2
-        fallbackCard.Parent = onlineScriptsList
-        Instance.new("UICorner", fallbackCard).CornerRadius = UDim.new(0, 6)
-        
-        local fallbackLbl = Instance.new("TextLabel")
-        fallbackLbl.Size = UDim2.new(1, -15, 1, 0)
-        fallbackLbl.Position = UDim2.new(0, 10, 0, 0)
-        fallbackLbl.BackgroundTransparency = 1
-        fallbackLbl.Text = "No online repository connected yet."
-        fallbackLbl.TextColor3 = Color3.fromRGB(140, 130, 160)
-        fallbackLbl.Font = Enum.Font.GothamItalic
-        fallbackLbl.TextSize = 11
-        fallbackLbl.TextXAlignment = Enum.TextXAlignment.Left
-        fallbackLbl.ZIndex = 2
-        fallbackLbl.Parent = fallbackCard
-    end
-end)
-
 -- ==========================================
 -- 6. EXECUTION HANDLERS
 -- ==========================================
 runBtn.Activated:Connect(function()
     local code = editorBox.Text
     if code == placeholderTextStr or code == "" then
-        statusLbl.Text = "Status: No script provided to run."
+        statusLbl.Text = "Status: No script provided."
         statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
         return
     end
 
-    local success, err = pcall(function()
+    local success = pcall(function()
         local func = loadstring(code)
         if func then task.spawn(func) end
     end)
@@ -572,13 +473,13 @@ runBtn.Activated:Connect(function()
         statusLbl.Text = "Status: Successfully ran script!"
         statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
     else
-        statusLbl.Text = "Status: Execution error encountered."
+        statusLbl.Text = "Status: Execution error."
         statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
     end
 end)
 
 consoleBtn.Activated:Connect(function()
     pcall(function() game:GetService("StarterGui"):SetCore("DevConsoleVisible", true) end)
-    statusLbl.Text = "Status: Developer Console toggled."
+    statusLbl.Text = "Status: Console toggled."
     statusLbl.TextColor3 = Color3.fromRGB(170, 160, 190)
 end)
