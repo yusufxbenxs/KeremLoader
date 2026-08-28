@@ -1,30 +1,20 @@
--- Newton Hub V1.0.0 - Fixed Cross-Platform UI Loader
+-- Newton Hub V1.0.0 - Delta Mobile Optimized Version
+Print("Just letting you know that Newton hub is running")
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local RunService = Service or game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
 
 local localPlayer = Players.LocalPlayer
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
--- Safe container parenting for both PC & Mobile
-local parentGui
-if syn and syn.protect_gui then
-    parentGui = CoreGui
-elseif gethui then
-    parentGui = gethui()
-else
-    parentGui = playerGui
-end
+-- Delta Mobile CoreGui / PlayerGui safety fallback
+local parentGui = (gethui and gethui()) or playerGui
 
 if parentGui:FindFirstChild("NewtonHubComplete") then
     parentGui.NewtonHubComplete:Destroy()
 end
 
--- ==========================================
--- PRE-SAVED SCRIPTS CONFIGURATION
--- ==========================================
 local SAVED_GAME_SCRIPTS = {
     { TargetGame = "Universal", Name = "Fullbright & NoFog", Code = "game.Lighting.Brightness = 2\ngame.Lighting.GlobalShadows = false" },
     { TargetGame = "Universal", Name = "Infinite Jump", Code = "game:GetService('UserInputService').JumpRequest:Connect(function() game.Players.LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end)" },
@@ -36,170 +26,71 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NewtonHubComplete"
 screenGui.ResetOnSpawn = false
 screenGui.IgnoreGuiInset = true
-if syn and syn.protect_gui then
-    syn.protect_gui(screenGui)
-    screenGui.Parent = parentGui
-else
-    pcall(function()
-        screenGui.Parent = parentGui
-    end)
-    if not screenGui.Parent then
-        screenGui.Parent = playerGui
-    end
-end
+screenGui.Parent = parentGui
 
--- ==========================================
--- 1. MINIMIZED "N" ICON
--- ==========================================
+-- 1. MINIMIZED FLOATING ICON (Delta Touch Friendly)
 local minIcon = Instance.new("TextButton")
-minIcon.Size = UDim2.new(0, 50, 0, 50)
-minIcon.Position = UDim2.new(0, 30, 0.5, -25)
+minIcon.Size = UDim2.new(0, 48, 0, 48)
+minIcon.Position = UDim2.new(0, 20, 0.4, 0)
 minIcon.BackgroundColor3 = Color3.fromRGB(24, 20, 42)
 minIcon.Text = "N"
 minIcon.TextColor3 = Color3.fromRGB(220, 220, 230)
 minIcon.Font = Enum.Font.GothamBold
-minIcon.TextSize = 24
+minIcon.TextSize = 22
 minIcon.Visible = false
 minIcon.Active = true
 minIcon.Draggable = true
 minIcon.Parent = screenGui
 Instance.new("UICorner", minIcon).CornerRadius = UDim.new(1, 0)
 
--- ==========================================
--- 2. MAIN HUB WINDOW & MOVING STARRY BACKGROUND
--- ==========================================
+-- 2. MAIN WINDOW
 local mainWindow = Instance.new("Frame")
-mainWindow.Size = UDim2.new(0, 680, 0, 390)
-mainWindow.Position = UDim2.new(0.5, -340, 0.5, -195)
+mainWindow.Size = UDim2.new(0, 560, 0, 320)
+mainWindow.Position = UDim2.new(0.5, -280, 0.5, -160)
 mainWindow.BackgroundColor3 = Color3.fromRGB(18, 15, 30)
 mainWindow.BorderSizePixel = 0
 mainWindow.Active = true
 mainWindow.Draggable = true
 mainWindow.ClipsDescendants = true
 mainWindow.Parent = screenGui
-Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 12)
-
-local starHolder = Instance.new("Folder")
-starHolder.Name = "StarryBackground"
-starHolder.Parent = mainWindow
-
-local activeStars = {}
-for i = 1, 30 do
-    local star = Instance.new("Frame")
-    local starSize = math.random(1, 3)
-    star.Size = UDim2.new(0, starSize, 0, starSize)
-    star.Position = UDim2.new(math.random(), 0, math.random(), 0)
-    star.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    star.BackgroundTransparency = math.random(20, 80) / 100
-    star.BorderSizePixel = 0
-    star.Parent = starHolder
-    Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
-    
-    table.insert(activeStars, {
-        Object = star,
-        Speed = math.random(8, 20) / 1000
-    })
-end
-
-RunService.RenderStepped:Connect(function(dt)
-    for _, starData in ipairs(activeStars) do
-        local star = starData.Object
-        if star and star.Parent then
-            local currentPos = star.Position
-            local newY = currentPos.Y.Scale - (starData.Speed * dt)
-            
-            if newY < -0.05 then
-                star:Destroy()
-                local newStar = Instance.new("Frame")
-                local starSize = math.random(1, 3)
-                newStar.Size = UDim2.new(0, starSize, 0, starSize)
-                newStar.Position = UDim2.new(math.random(), 0, 1.05, 0)
-                newStar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-                newStar.BackgroundTransparency = math.random(20, 80) / 100
-                newStar.BorderSizePixel = 0
-                newStar.Parent = starHolder
-                Instance.new("UICorner", newStar).CornerRadius = UDim.new(1, 0)
-                starData.Object = newStar
-            else
-                star.Position = UDim2.new(currentPos.X.Scale, currentPos.X.Offset, newY, currentPos.Y.Offset)
-            end
-        end
-    end
-end)
+Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 10)
 
 -- Titlebar
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.Size = UDim2.new(1, 0, 0, 32)
 titleBar.BackgroundColor3 = Color3.fromRGB(24, 20, 42)
 titleBar.BorderSizePixel = 0
 titleBar.ZIndex = 5
 titleBar.Parent = mainWindow
-Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 10)
 
 local fixTitleCorner = Instance.new("Frame")
-fixTitleCorner.Size = UDim2.new(1, 0, 0, 10)
-fixTitleCorner.Position = UDim2.new(0, 0, 1, -10)
+fixTitleCorner.Size = UDim2.new(1, 0, 0, 8)
+fixTitleCorner.Position = UDim2.new(0, 0, 1, -8)
 fixTitleCorner.BackgroundColor3 = Color3.fromRGB(24, 20, 42)
 fixTitleCorner.BorderSizePixel = 0
 fixTitleCorner.ZIndex = 5
 fixTitleCorner.Parent = titleBar
 
 local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(0, 200, 1, 0)
-titleText.Position = UDim2.new(0, 14, 0, 0)
+titleText.Size = UDim2.new(0, 160, 1, 0)
+titleText.Position = UDim2.new(0, 12, 0, 0)
 titleText.BackgroundTransparency = 1
 titleText.ZIndex = 5
-titleText.Text = "Newton Hub <font color=\"#888888\">V1.0.0</font>"
-titleText.RichText = true
+titleText.Text = "Newton Hub"
 titleText.TextColor3 = Color3.fromRGB(220, 220, 230)
 titleText.Font = Enum.Font.GothamBold
-titleText.TextSize = 14
+titleText.TextSize = 13
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.Parent = titleBar
-
-local gameBadge = Instance.new("Frame")
-gameBadge.Size = UDim2.new(0, 210, 0, 26)
-gameBadge.Position = UDim2.new(0.5, -105, 0.5, -13)
-gameBadge.BackgroundColor3 = Color3.fromRGB(18, 15, 30)
-gameBadge.ZIndex = 5
-gameBadge.Parent = titleBar
-Instance.new("UICorner", gameBadge).CornerRadius = UDim.new(1, 0)
-
-local gameIconImg = Instance.new("ImageLabel")
-gameIconImg.Size = UDim2.new(0, 18, 0, 18)
-gameIconImg.Position = UDim2.new(0, 4, 0.5, -9)
-gameIconImg.BackgroundTransparency = 1
-gameIconImg.ZIndex = 5
-gameIconImg.Image = "rbxassetid://6023426915"
-gameIconImg.Parent = gameBadge
-Instance.new("UICorner", gameIconImg).CornerRadius = UDim.new(0, 4)
-
-task.spawn(function()
-    local ok, info = pcall(function() return MarketplaceService:GetProductInfo(game.PlaceId) end)
-    if ok and info and info.IconImageAssetId and info.IconImageAssetId > 0 then
-        gameIconImg.Image = "rbxassetid://" .. tostring(info.IconImageAssetId)
-    end
-end)
 
 local successInfo, gameInfo = pcall(function() return MarketplaceService:GetProductInfo(game.PlaceId) end)
 local actualGameName = (successInfo and gameInfo and gameInfo.Name) or "Game"
 
-local gameNameLbl = Instance.new("TextLabel")
-gameNameLbl.Size = UDim2.new(1, -30, 1, 0)
-gameNameLbl.Position = UDim2.new(0, 28, 0, 0)
-gameNameLbl.BackgroundTransparency = 1
-gameNameLbl.ZIndex = 5
-gameNameLbl.Text = actualGameName
-gameNameLbl.TextColor3 = Color3.fromRGB(180, 170, 200)
-gameNameLbl.Font = Enum.Font.GothamMedium
-gameNameLbl.TextSize = 11
-gameNameLbl.TextXAlignment = Enum.TextXAlignment.Left
-gameNameLbl.Parent = gameBadge
-
 -- Window Controls
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 14, 0, 14)
-closeBtn.Position = UDim2.new(1, -22, 0.5, -7)
+closeBtn.Size = UDim2.new(0, 12, 0, 12)
+closeBtn.Position = UDim2.new(1, -18, 0.5, -6)
 closeBtn.BackgroundColor3 = Color3.fromRGB(231, 76, 60)
 closeBtn.Text = ""
 closeBtn.ZIndex = 5
@@ -208,8 +99,8 @@ Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
 closeBtn.Activated:Connect(function() screenGui:Destroy() end)
 
 local minBtn = Instance.new("TextButton")
-minBtn.Size = UDim2.new(0, 14, 0, 14)
-minBtn.Position = UDim2.new(1, -46, 0.5, -7)
+minBtn.Size = UDim2.new(0, 12, 0, 12)
+minBtn.Position = UDim2.new(1, -38, 0.5, -6)
 minBtn.BackgroundColor3 = Color3.fromRGB(241, 196, 15)
 minBtn.Text = ""
 minBtn.ZIndex = 5
@@ -226,23 +117,21 @@ minIcon.Activated:Connect(function()
     mainWindow.Visible = true
 end)
 
--- ==========================================
--- 3. SIDEBAR NAVIGATION & TAB SYSTEM
--- ==========================================
+-- 3. SIDEBAR NAVIGATION & TABS
 local sidebar = Instance.new("Frame")
-sidebar.Size = UDim2.new(0, 130, 1, -45)
-sidebar.Position = UDim2.new(0, 10, 0, 40)
+sidebar.Size = UDim2.new(0, 120, 1, -40)
+sidebar.Position = UDim2.new(0, 8, 0, 36)
 sidebar.BackgroundTransparency = 1
 sidebar.ZIndex = 5
 sidebar.Parent = mainWindow
 
-local tabList = {"Execute", actualGameName .. " Tools", "Clipboard", "Online scripts", "Settings", "About"}
+local tabList = {"Execute", actualGameName .. " Tools", "Online scripts"}
 local tabButtons = {}
 local tabContainers = {}
 
 local contentArea = Instance.new("Frame")
-contentArea.Size = UDim2.new(0, 515, 1, -55)
-contentArea.Position = UDim2.new(0, 150, 0, 45)
+contentArea.Size = UDim2.new(0, 415, 1, -44)
+contentArea.Position = UDim2.new(0, 135, 0, 38)
 contentArea.BackgroundTransparency = 1
 contentArea.ZIndex = 2
 contentArea.Parent = mainWindow
@@ -251,16 +140,16 @@ for i, tabName in ipairs(tabList) do
     local rawKeyName = tabList[i]
     
     local tabBtn = Instance.new("TextButton")
-    tabBtn.Size = UDim2.new(1, 0, 0, 36)
-    tabBtn.Position = UDim2.new(0, 0, 0, (i - 1) * 44)
+    tabBtn.Size = UDim2.new(1, 0, 0, 32)
+    tabBtn.Position = UDim2.new(0, 0, 0, (i - 1) * 38)
     tabBtn.BackgroundColor3 = (i == 1) and Color3.fromRGB(35, 28, 60) or Color3.fromRGB(28, 22, 48)
-    tabBtn.Text = (i == 2) and "{GAME} Tools" or tabName
+    tabBtn.Text = (i == 2) and "Game Tools" or tabName
     tabBtn.TextColor3 = (i == 1) and Color3.fromRGB(240, 240, 250) or Color3.fromRGB(140, 130, 160)
     tabBtn.Font = (i == 1) and Enum.Font.GothamBold or Enum.Font.GothamMedium
     tabBtn.TextSize = 11
     tabBtn.ZIndex = 5
     tabBtn.Parent = sidebar
-    Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", tabBtn).CornerRadius = UDim.new(0, 6)
     tabButtons[rawKeyName] = tabBtn
 
     local container = Instance.new("ScrollingFrame")
@@ -269,14 +158,14 @@ for i, tabName in ipairs(tabList) do
     container.BorderSizePixel = 0
     container.CanvasSize = UDim2.new(0, 0, 0, 0)
     container.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    container.ScrollBarThickness = 4
+    container.ScrollBarThickness = 3
     container.Visible = (i == 1)
     container.ZIndex = 2
     container.Parent = contentArea
     
     local listLayout = Instance.new("UIListLayout")
     listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    listLayout.Padding = UDim.new(0, 8)
+    listLayout.Padding = UDim.new(0, 6)
     listLayout.Parent = container
     
     tabContainers[rawKeyName] = container
@@ -288,7 +177,7 @@ for name, btn in pairs(tabButtons) do
             otherBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
             otherBtn.TextColor3 = Color3.fromRGB(140, 130, 160)
             otherBtn.Font = Enum.Font.GothamMedium
-        }
+        end
         for _, cont in pairs(tabContainers) do
             cont.Visible = false
         end
@@ -299,26 +188,24 @@ for name, btn in pairs(tabButtons) do
     end)
 end
 
--- ==========================================
--- 4. BUILD EXECUTE TAB CONTENT
--- ==========================================
+-- 4. EXECUTE TAB
 local executeContainer = tabContainers["Execute"]
 
 local editorBox = Instance.new("TextBox")
-editorBox.Size = UDim2.new(1, 0, 0, 230)
+editorBox.Size = UDim2.new(1, 0, 0, 180)
 editorBox.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
 editorBox.MultiLine = true
 editorBox.ClearTextOnFocus = false
-local placeholderTextStr = "Put your script here, then press Run."
+local placeholderTextStr = "Paste script here..."
 editorBox.Text = placeholderTextStr
 editorBox.TextColor3 = Color3.fromRGB(100, 90, 120)
 editorBox.Font = Enum.Font.Code
-editorBox.TextSize = 12
+editorBox.TextSize = 11
 editorBox.TextXAlignment = Enum.TextXAlignment.Left
 editorBox.TextYAlignment = Enum.TextYAlignment.Top
 editorBox.ZIndex = 2
 editorBox.Parent = executeContainer
-Instance.new("UICorner", editorBox).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", editorBox).CornerRadius = UDim.new(0, 6)
 
 editorBox.Focused:Connect(function()
     if editorBox.Text == placeholderTextStr then
@@ -335,36 +222,36 @@ editorBox.FocusLost:Connect(function()
 end)
 
 local execButtonRow = Instance.new("Frame")
-execButtonRow.Size = UDim2.new(1, 0, 0, 40)
+execButtonRow.Size = UDim2.new(1, 0, 0, 32)
 execButtonRow.BackgroundTransparency = 1
 execButtonRow.ZIndex = 2
 execButtonRow.Parent = executeContainer
 
 local runBtn = Instance.new("TextButton")
-runBtn.Size = UDim2.new(0, 150, 1, 0)
-runBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
+runBtn.Size = UDim2.new(0, 120, 1, 0)
+runBtn.BackgroundColor3 = Color3.fromRGB(35, 28, 60)
 runBtn.Text = "Run"
-runBtn.TextColor3 = Color3.fromRGB(170, 160, 190)
+runBtn.TextColor3 = Color3.fromRGB(220, 220, 240)
 runBtn.Font = Enum.Font.GothamBold
-runBtn.TextSize = 14
+runBtn.TextSize = 12
 runBtn.ZIndex = 2
 runBtn.Parent = execButtonRow
-Instance.new("UICorner", runBtn).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", runBtn).CornerRadius = UDim.new(0, 6)
 
-local consoleBtn = Instance.new("TextButton")
-consoleBtn.Size = UDim2.new(0, 150, 1, 0)
-consoleBtn.Position = UDim2.new(0, 160, 0, 0)
-consoleBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
-consoleBtn.Text = "Console"
-consoleBtn.TextColor3 = Color3.fromRGB(170, 160, 190)
-consoleBtn.Font = Enum.Font.GothamBold
-consoleBtn.TextSize = 14
-consoleBtn.ZIndex = 2
-consoleBtn.Parent = execButtonRow
-Instance.new("UICorner", consoleBtn).CornerRadius = UDim.new(0, 8)
+local clearBtn = Instance.new("TextButton")
+clearBtn.Size = UDim2.new(0, 120, 1, 0)
+clearBtn.Position = UDim2.new(0, 130, 0, 0)
+clearBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
+clearBtn.Text = "Clear"
+clearBtn.TextColor3 = Color3.fromRGB(170, 160, 190)
+clearBtn.Font = Enum.Font.GothamBold
+clearBtn.TextSize = 12
+clearBtn.ZIndex = 2
+clearBtn.Parent = execButtonRow
+Instance.new("UICorner", clearBtn).CornerRadius = UDim.new(0, 6)
 
 local statusLbl = Instance.new("TextLabel")
-statusLbl.Size = UDim2.new(1, 0, 0, 20)
+statusLbl.Size = UDim2.new(1, 0, 0, 18)
 statusLbl.BackgroundTransparency = 1
 statusLbl.Text = "Status: Ready"
 statusLbl.TextColor3 = Color3.fromRGB(140, 130, 160)
@@ -373,56 +260,52 @@ statusLbl.TextSize = 11
 statusLbl.ZIndex = 2
 statusLbl.Parent = executeContainer
 
--- ==========================================
--- 5. BUILD {GAME} TOOLS TAB CONTENT
--- ==========================================
+-- 5. GAME TOOLS TAB (Game Scripts + Universal Scripts Combined Here)
 local toolsContainer = tabContainers[actualGameName .. " Tools"]
 
-local sec1Header = Instance.new("TextLabel")
-sec1Header.Size = UDim2.new(1, 0, 0, 24)
-sec1Header.BackgroundTransparency = 1
-sec1Header.Text = "📌 Saved Game Scripts (" .. actualGameName .. " Only)"
-sec1Header.TextColor3 = Color3.fromRGB(220, 210, 240)
-sec1Header.Font = Enum.Font.GothamBold
-sec1Header.TextSize = 13
-sec1Header.TextXAlignment = Enum.TextXAlignment.Left
-sec1Header.ZIndex = 2
-sec1Header.Parent = toolsContainer
+local secHeader = Instance.new("TextLabel")
+secHeader.Size = UDim2.new(1, 0, 0, 20)
+secHeader.BackgroundTransparency = 1
+secHeader.Text = "📌 Available Scripts (Game & Universal)"
+secHeader.TextColor3 = Color3.fromRGB(220, 210, 240)
+secHeader.Font = Enum.Font.GothamBold
+secHeader.TextSize = 12
+secHeader.TextXAlignment = Enum.TextXAlignment.Left
+secHeader.ZIndex = 2
+secHeader.Parent = toolsContainer
 
-local foundAnyMatch = false
 for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
-    if scriptData.TargetGame == actualGameName then
-        foundAnyMatch = true
+    if scriptData.TargetGame == actualGameName or scriptData.TargetGame == "Universal" then
         local scriptCard = Instance.new("Frame")
-        scriptCard.Size = UDim2.new(1, 0, 0, 45)
+        scriptCard.Size = UDim2.new(1, 0, 0, 38)
         scriptCard.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
         scriptCard.ZIndex = 2
         scriptCard.Parent = toolsContainer
-        Instance.new("UICorner", scriptCard).CornerRadius = UDim.new(0, 8)
+        Instance.new("UICorner", scriptCard).CornerRadius = UDim.new(0, 6)
         
         local nameLbl = Instance.new("TextLabel")
-        nameLbl.Size = UDim2.new(1, -110, 1, 0)
-        nameLbl.Position = UDim2.new(0, 12, 0, 0)
+        nameLbl.Size = UDim2.new(1, -90, 1, 0)
+        nameLbl.Position = UDim2.new(0, 10, 0, 0)
         nameLbl.BackgroundTransparency = 1
-        nameLbl.Text = scriptData.Name
+        nameLbl.Text = "[" .. scriptData.TargetGame .. "] " .. scriptData.Name
         nameLbl.TextColor3 = Color3.fromRGB(190, 180, 210)
         nameLbl.Font = Enum.Font.GothamMedium
-        nameLbl.TextSize = 12
+        nameLbl.TextSize = 11
         nameLbl.TextXAlignment = Enum.TextXAlignment.Left
         nameLbl.ZIndex = 2
         nameLbl.Parent = scriptCard
         
         local execCardBtn = Instance.new("TextButton")
-        execCardBtn.Size = UDim2.new(0, 90, 0, 30)
-        execCardBtn.Position = UDim2.new(1, -98, 0.5, -15)
+        execCardBtn.Size = UDim2.new(0, 75, 0, 26)
+        execCardBtn.Position = UDim2.new(1, -82, 0.5, -13)
         execCardBtn.BackgroundColor3 = Color3.fromRGB(45, 35, 75)
         execCardBtn.Text = "Execute"
         execCardBtn.TextColor3 = Color3.fromRGB(220, 220, 240)
         execCardBtn.Font = Enum.Font.GothamBold
-        execCardBtn.TextSize = 12
+        execCardBtn.TextSize = 11
         execCardBtn.ZIndex = 2
         execCardBtn.Parent = scriptCard
-        Instance.new("UICorner", execCardBtn).CornerRadius = UDim.new(0, 6)
+        Instance.new("UICorner", execCardBtn).CornerRadius = UDim.new(0, 4)
         
         execCardBtn.Activated:Connect(function()
             local success = pcall(function()
@@ -433,29 +316,14 @@ for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
                 statusLbl.Text = "Status: Ran [" .. scriptData.Name .. "]"
                 statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
             else
-                statusLbl.Text = "Status: Error running script."
+                statusLbl.Text = "Status: Execution error."
                 statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
             end
         end)
     end
 end
 
-if not foundAnyMatch then
-    local noMatchLbl = Instance.new("TextLabel")
-    noMatchLbl.Size = UDim2.new(1, 0, 0, 30)
-    noMatchLbl.BackgroundTransparency = 1
-    noMatchLbl.Text = "No specific saved scripts for this game."
-    noMatchLbl.TextColor3 = Color3.fromRGB(140, 130, 160)
-    noMatchLbl.Font = Enum.Font.GothamItalic
-    noMatchLbl.TextSize = 12
-    noMatchLbl.TextXAlignment = Enum.TextXAlignment.Left
-    noMatchLbl.ZIndex = 2
-    noMatchLbl.Parent = toolsContainer
-end
-
--- ==========================================
 -- 6. EXECUTION HANDLERS
--- ==========================================
 runBtn.Activated:Connect(function()
     local code = editorBox.Text
     if code == placeholderTextStr or code == "" then
@@ -478,8 +346,8 @@ runBtn.Activated:Connect(function()
     end
 end)
 
-consoleBtn.Activated:Connect(function()
-    pcall(function() game:GetService("StarterGui"):SetCore("DevConsoleVisible", true) end)
-    statusLbl.Text = "Status: Console toggled."
+clearBtn.Activated:Connect(function()
+    editorBox.Text = ""
+    statusLbl.Text = "Status: Editor cleared."
     statusLbl.TextColor3 = Color3.fromRGB(170, 160, 190)
 end)
