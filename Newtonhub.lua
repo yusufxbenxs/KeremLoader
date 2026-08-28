@@ -1,4 +1,4 @@
--- Newton Hub V1.0.0 - Variable-Filtered Saved Scripts & Moving Stars
+-- Newton Hub V1.0.0 - Cross-Platform (PC & Mobile) Unified Version
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -6,7 +6,12 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
 
 local localPlayer = Players.LocalPlayer
-local parentGui = (gethui and gethui()) or localPlayer:WaitForChild("PlayerGui")
+local successHui, parentGui = pcall(function()
+    return (gethui and gethui()) or localPlayer:WaitForChild("PlayerGui")
+end)
+if not successHui or not parentGui then
+    parentGui = localPlayer:WaitForChild("PlayerGui")
+end
 
 if parentGui:FindFirstChild("NewtonHubComplete") then
     parentGui.NewtonHubComplete:Destroy()
@@ -14,7 +19,6 @@ end
 
 -- ==========================================
 -- PRE-SAVED SCRIPTS CONFIGURATION
--- TargetGame can be specific (e.g. "BedWars") or "Universal".
 -- ==========================================
 local SAVED_GAME_SCRIPTS = {
     { TargetGame = "Universal", Name = "Fullbright & NoFog", Code = "game.Lighting.Brightness = 2\ngame.Lighting.GlobalShadows = false" },
@@ -30,16 +34,16 @@ screenGui.DisplayOrder = 999999
 screenGui.Parent = parentGui
 
 -- ==========================================
--- 1. MINIMIZED "N" ICON
+-- 1. MINIMIZED "N" ICON (Draggable / Touch Friendly)
 -- ==========================================
 local minIcon = Instance.new("TextButton")
-minIcon.Size = UDim2.new(0, 44, 0, 44)
-minIcon.Position = UDim2.new(0, 30, 0.5, -22)
+minIcon.Size = UDim2.new(0, 50, 0, 50)
+minIcon.Position = UDim2.new(0, 30, 0.5, -25)
 minIcon.BackgroundColor3 = Color3.fromRGB(24, 20, 42)
 minIcon.Text = "N"
 minIcon.TextColor3 = Color3.fromRGB(220, 220, 230)
 minIcon.Font = Enum.Font.GothamBold
-minIcon.TextSize = 22
+minIcon.TextSize = 24
 minIcon.Visible = false
 minIcon.Active = true
 minIcon.Draggable = true
@@ -60,7 +64,7 @@ mainWindow.ClipsDescendants = true
 mainWindow.Parent = screenGui
 Instance.new("UICorner", mainWindow).CornerRadius = UDim.new(0, 12)
 
--- Procedural Moving Starry Background Generator (Deletes and recycles at bottom)
+-- Procedural Moving Starry Background Generator
 local starHolder = Instance.new("Folder")
 starHolder.Name = "StarryBackground"
 starHolder.Parent = mainWindow
@@ -68,7 +72,7 @@ starHolder.Parent = mainWindow
 math.randomseed(os.time())
 local activeStars = {}
 
-for i = 1, 50 do
+for i = 1, 40 do
     local star = Instance.new("Frame")
     local starSize = math.random(1, 3)
     star.Size = UDim2.new(0, starSize, 0, starSize)
@@ -183,7 +187,7 @@ gameNameLbl.TextSize = 11
 gameNameLbl.TextXAlignment = Enum.TextXAlignment.Left
 gameNameLbl.Parent = gameBadge
 
--- macOS Window Controls
+-- Window Controls (Mac style, touch responsive)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 14, 0, 14)
 closeBtn.Position = UDim2.new(1, -22, 0.5, -7)
@@ -192,7 +196,7 @@ closeBtn.Text = ""
 closeBtn.ZIndex = 5
 closeBtn.Parent = titleBar
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(1, 0)
-closeBtn.MouseButton1Click:Connect(function() screenGui:Destroy() end)
+closeBtn.Activated:Connect(function() screenGui:Destroy() end)
 
 local minBtn = Instance.new("TextButton")
 minBtn.Size = UDim2.new(0, 14, 0, 14)
@@ -203,24 +207,15 @@ minBtn.ZIndex = 5
 minBtn.Parent = titleBar
 Instance.new("UICorner", minBtn).CornerRadius = UDim.new(1, 0)
 
-minBtn.MouseButton1Click:Connect(function()
+minBtn.Activated:Connect(function()
     mainWindow.Visible = false
     minIcon.Visible = true
 end)
 
-minIcon.MouseButton1Click:Connect(function()
+minIcon.Activated:Connect(function()
     minIcon.Visible = false
     mainWindow.Visible = true
 end)
-
-local maxBtn = Instance.new("TextButton")
-maxBtn.Size = UDim2.new(0, 14, 0, 14)
-maxBtn.Position = UDim2.new(1, -70, 0.5, -7)
-maxBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
-maxBtn.Text = ""
-maxBtn.ZIndex = 5
-maxBtn.Parent = titleBar
-Instance.new("UICorner", maxBtn).CornerRadius = UDim.new(1, 0)
 
 -- ==========================================
 -- 3. SIDEBAR NAVIGATION & TAB SYSTEM
@@ -279,7 +274,7 @@ for i, tabName in ipairs(tabList) do
 end
 
 for name, btn in pairs(tabButtons) do
-    btn.MouseButton1Click:Connect(function()
+    btn.Activated:Connect(function()
         for otherName, otherBtn in pairs(tabButtons) do
             otherBtn.BackgroundColor3 = Color3.fromRGB(28, 22, 48)
             otherBtn.TextColor3 = Color3.fromRGB(140, 130, 160)
@@ -399,7 +394,6 @@ sec1Header.Parent = toolsContainer
 
 local foundAnyMatch = false
 for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
-    -- Only match exact game names (excludes "Universal" from this tab)
     if scriptData.TargetGame == actualGameName then
         foundAnyMatch = true
         local scriptCard = Instance.new("Frame")
@@ -433,7 +427,7 @@ for _, scriptData in ipairs(SAVED_GAME_SCRIPTS) do
         execCardBtn.Parent = scriptCard
         Instance.new("UICorner", execCardBtn).CornerRadius = UDim.new(0, 6)
         
-        execCardBtn.MouseButton1Click:Connect(function()
+        execCardBtn.Activated:Connect(function()
             local success, err = pcall(function()
                 local func = loadstring(scriptData.Code)
                 if func then task.spawn(func) end
@@ -525,7 +519,7 @@ task.spawn(function()
                 loadBtn.Parent = card
                 Instance.new("UICorner", loadBtn).CornerRadius = UDim.new(0, 4)
                 
-                loadBtn.MouseButton1Click:Connect(function()
+                loadBtn.Activated:Connect(function()
                     if onlineData.Url then
                         local fetchedCode = game:HttpGet(onlineData.Url)
                         local fn = loadstring(fetchedCode)
@@ -561,7 +555,7 @@ end)
 -- ==========================================
 -- 6. EXECUTION HANDLERS
 -- ==========================================
-runBtn.MouseButton1Click:Connect(function()
+runBtn.Activated:Connect(function()
     local code = editorBox.Text
     if code == placeholderTextStr or code == "" then
         statusLbl.Text = "Status: No script provided to run."
@@ -583,7 +577,7 @@ runBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-consoleBtn.MouseButton1Click:Connect(function()
+consoleBtn.Activated:Connect(function()
     pcall(function() game:GetService("StarterGui"):SetCore("DevConsoleVisible", true) end)
     statusLbl.Text = "Status: Developer Console toggled."
     statusLbl.TextColor3 = Color3.fromRGB(170, 160, 190)
