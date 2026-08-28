@@ -1,7 +1,7 @@
 -- Newton Hub V1.0.0 - Delta Mobile Optimized Version
-Print("Just letting you know that Newton hub is running")
+print("Just letting you know that Newton hub is running")
 local Players = game:GetService("Players")
-local RunService = Service or game:GetService("RunService")
+local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local HttpService = game:GetService("HttpService")
 
@@ -339,7 +339,7 @@ runBtn.Activated:Connect(function()
     
     if success then
         statusLbl.Text = "Status: Successfully ran script!"
-        statusLbl.TextColor3 = Color3.fromRGB(46, 204, 113)
+        statusLbl.TextColor3 = Color3.fromRGB(46, 204, 1'13')
     else
         statusLbl.Text = "Status: Execution error."
         statusLbl.TextColor3 = Color3.fromRGB(231, 76, 60)
